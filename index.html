@@ -1,1 +1,1413 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>المدرس الرقمي | البوت المتخصص في الكتب</title>
+    
+    <!-- خطوط عربية -->
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;500;800&display=swap" rel="stylesheet">
+    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script> 
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+    <!-- UI Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
+    <style>
+        /* ========== جميع الأنماط السابقة هنا ========== */
+        :root {
+            --bg-dark: #0f172a;
+            --bg-card: rgba(30, 41, 59, 0.95);
+            --primary: #3b82f6;
+            --accent: #f59e0b;
+            --neon-blue: #00f3ff;
+            --text-main: #f8fafc;
+            --text-sec: #94a3b8;
+            --glass: rgba(255, 255, 255, 0.05);
+            --border: rgba(255, 255, 255, 0.1);
+            --red: #ef4444; 
+            --green: #10b981; 
+            --purple: #8b5cf6;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline:none; }
+        
+        body {
+            font-family: 'Tajawal', sans-serif; 
+            margin: 0;
+            background: radial-gradient(circle at top, #1e293b, #0f172a); 
+            color: var(--text-main);
+            padding-bottom: 90px;
+            min-height: 100vh;
+            user-select: none;
+            overflow-x: hidden;
+        }
+
+        .hidden { display: none !important; }
+        .search-hidden { display: none !important; }
+        
+        /* Header */
+        header {
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(12px);
+            padding: 15px 20px;
+            position: sticky; top: 0; z-index: 1000;
+            border-bottom: 1px solid var(--border);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            display: flex; flex-direction: column; gap: 10px;
+        }
+        .header-top { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+        
+        /* Search */
+        .search-container { position: relative; width: 100%; }
+        .search-container input {
+            width: 100%; padding: 12px 45px 12px 15px;
+            border-radius: 15px; border: 1px solid var(--border);
+            font-size: 14px; background: var(--glass); color: white;
+            transition: 0.3s; font-family: 'Tajawal';
+        }
+        .search-container input:focus { 
+            background: rgba(255,255,255,0.1); border-color: var(--neon-blue); 
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.2); 
+        }
+        .search-container i { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: var(--accent); }
+
+        /* Grid & Cards */
+        .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; padding: 15px; }
+        .card { 
+            background: var(--bg-card); 
+            border-radius: 18px; 
+            padding: 20px; 
+            text-align: center; 
+            border: 1px solid var(--border); 
+            transition: 0.3s; 
+            position: relative; 
+            overflow: hidden; 
+            backdrop-filter: blur(5px); 
+            color: var(--text-main); 
+            cursor: pointer;
+        }
+        .card:active { transform: scale(0.96); }
+        .card:hover { 
+            border-color: var(--neon-blue); 
+            box-shadow: 0 5px 20px rgba(0, 243, 255, 0.15); 
+            transform: translateY(-5px); 
+        }
+        .card i { 
+            font-size: 28px; 
+            margin-bottom: 10px; 
+            background: linear-gradient(45deg, #fff, #aaa); 
+            -webkit-background-clip: text; 
+            -webkit-text-fill-color: transparent; 
+        }
+
+        /* Buttons */
+        .btn-main { 
+            background: linear-gradient(90deg, var(--primary), #2563eb); 
+            color: white; 
+            border: none; 
+            padding: 15px; 
+            width: 100%; 
+            border-radius: 12px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            font-size: 16px; 
+            margin-top: 10px; 
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3); 
+            transition: 0.3s; 
+        }
+        .btn-guest { 
+            background: transparent; 
+            border: 1px solid var(--text-sec); 
+            color: var(--text-sec); 
+            width: 100%; 
+            padding: 12px; 
+            border-radius: 10px; 
+            margin-top: 10px; 
+            cursor: pointer; 
+        }
+
+        /* Inputs */
+        input, textarea, select { 
+            width: 100%; 
+            padding: 15px; 
+            margin: 8px 0; 
+            background: rgba(0,0,0,0.2); 
+            border: 1px solid var(--border); 
+            border-radius: 12px; 
+            color: white; 
+            font-family: 'Tajawal'; 
+            box-sizing: border-box; 
+        }
+        input:focus, textarea:focus, select:focus { 
+            border-color: var(--accent); 
+            outline: none; 
+            background: rgba(0,0,0,0.4); 
+        }
+
+        /* Posts */
+        .post { 
+            background: var(--bg-card); 
+            margin: 15px; 
+            border-radius: 20px; 
+            overflow: hidden; 
+            border: 1px solid var(--border); 
+            animation: fadeIn 0.5s ease; 
+            position: relative; 
+        }
+
+        /* Bottom Navigation */
+        .bottom-tabs {
+            position: fixed; 
+            bottom: 20px; 
+            left: 20px; 
+            right: 20px; 
+            background: rgba(30, 41, 59, 0.95); 
+            backdrop-filter: blur(15px); 
+            border-radius: 25px; 
+            display: flex; 
+            justify-content: space-around; 
+            padding: 12px 0; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
+            border: 1px solid var(--border); 
+            z-index: 1000;
+        }
+        .tab-btn { 
+            color: var(--text-sec); 
+            text-align: center; 
+            font-size: 10px; 
+            transition: 0.3s; 
+            position: relative; 
+            flex: 1; 
+            cursor: pointer; 
+        }
+        .tab-btn i { 
+            font-size: 22px; 
+            margin-bottom: 4px; 
+            display: block; 
+            transition: 0.3s; 
+        }
+        .tab-btn.active { color: var(--neon-blue); }
+        .tab-btn.active i { transform: translateY(-5px); text-shadow: 0 0 10px var(--neon-blue); }
+
+        /* Loading */
+        .loading { 
+            text-align: center; 
+            padding: 20px; 
+            color: var(--text-sec); 
+        }
+        .loading-spinner {
+            border: 3px solid var(--border);
+            border-top: 3px solid var(--accent);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Book AI Section */
+        .book-ai-section {
+            background: var(--bg-card);
+            padding: 25px;
+            border-radius: 20px;
+            margin: 20px;
+            border: 2px solid var(--purple);
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.2);
+        }
+
+        /* Quiz Results */
+        .quiz-result {
+            background: rgba(139, 92, 246, 0.1);
+            border: 2px solid var(--purple);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+
+        /* Question Card */
+        .question-card {
+            background: rgba(0,0,0,0.2);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border);
+        }
+
+        /* Options */
+        .option {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .option:hover {
+            background: rgba(255,255,255,0.1);
+            border-color: var(--primary);
+        }
+        .option.selected {
+            background: rgba(59, 130, 246, 0.2);
+            border-color: var(--primary);
+        }
+        .option.correct {
+            background: rgba(16, 185, 129, 0.2);
+            border-color: var(--green);
+            color: var(--green);
+        }
+        .option.incorrect {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: var(--red);
+            color: var(--red);
+        }
+        
+        /* Badges */
+        .badge {
+            padding: 3px 8px;
+            border-radius: 5px;
+            font-size: 10px;
+            font-weight: bold;
+        }
+        .badge-purple {
+            background: rgba(139, 92, 246, 0.2);
+            color: var(--purple);
+            border: 1px solid var(--purple);
+        }
+        
+        /* Book Card */
+        .book-card {
+            background: var(--bg-card);
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 1px solid var(--border);
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .book-cover {
+            width: 80px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 10px;
+            border: 1px solid var(--accent);
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .grid { grid-template-columns: 1fr; }
+            .bottom-tabs { left: 10px; right: 10px; bottom: 10px; }
+        }
+    </style>
+</head>
+<body>
+<!-- شاشة التحميل -->
+<div id="main-preloader" style="position:fixed; top:0; left:0; width:100%; height:100%; background:#0f172a; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:99999;">
+    <div class="loading-spinner"></div>
+    <p style="color:white; font-family:'Tajawal'; margin-top:10px;">جاري التحقق من الحساب...</p>
+</div>
+
+<!-- شاشة الدخول -->
+<div id="auth-screen" class="hidden">
+    <div style="padding:40px; text-align:center; height:100vh; display:flex; flex-direction:column; justify-content:center; align-items:center;">
+        <img src="https://cdn-icons-png.flaticon.com/512/4711/4711981.png" style="width:100px; height:100px; border-radius:50%; border:3px solid var(--accent); padding:5px; margin-bottom:30px;">
+        <h2 style="font-size: 32px; margin-bottom:5px; background: linear-gradient(45deg, var(--neon-blue), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">المدرس الرقمي</h2>
+        <p style="color:var(--text-sec); margin-bottom:40px;">البوت المتخصص في الكتب الدراسية</p>
+        <div style="width:100%; max-width:350px;">
+            <button class="btn-main" onclick="loginWithGoogle()" style="background:white; color:black; display:flex; align-items:center; justify-content:center; gap:10px;">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google" style="width:20px; height:20px;">
+                دخول بواسطة Google
+            </button>
+            <button class="btn-guest" onclick="enterGuestMode()">تصفح كزائر 👀</button>
+        </div>
+    </div>
+</div>
+
+<!-- التطبيق الرئيسي -->
+<div id="app-screen" class="hidden">
+    <header>
+        <div class="header-top">
+            <span onclick="handleBackButton()" style="cursor:pointer; font-size:22px; color:var(--text-sec)">
+                <i class="fas fa-arrow-right"></i>
+            </span>
+            <span id="head-title" style="font-weight: 800; font-size: 20px; color: var(--text-main);">الرئيسية</span>
+            <div style="background:rgba(255,255,255,0.1); padding:5px 10px; border-radius:15px; display:flex; align-items:center; gap:5px;">
+                <i class="fas fa-star" style="color:var(--accent); font-size:12px;"></i>
+                <span id="u-stars" style="font-size:12px; font-weight:bold;">0.0</span>
+            </div>
+        </div>
+        <div class="search-container" id="main-search">
+            <i class="fas fa-search"></i>
+            <input type="text" id="store-search" placeholder="ابحث في الكتب..." oninput="debounceFilter(this.value)">
+        </div>
+    </header>
+
+    <div id="content-area"></div>
+
+    <div class="bottom-tabs">
+        <div class="tab-btn active" onclick="nav('home'); highlightTab(this)">
+            <i class="fas fa-home"></i>الرئيسية
+        </div>
+        <div class="tab-btn" onclick="nav('library'); highlightTab(this)">
+            <i class="fas fa-book"></i>المكتبة
+        </div>
+        <div class="tab-btn" onclick="nav('ai_books'); highlightTab(this)">
+            <i class="fas fa-robot"></i>البوت المتخصص
+        </div>
+        <div class="tab-btn" onclick="nav('subscription'); highlightTab(this)">
+            <i class="fas fa-crown"></i>الاشتراك
+        </div>
+        <div class="tab-btn" onclick="nav('profile'); highlightTab(this)">
+            <i class="fas fa-user"></i>ملفي
+        </div>
+    </div>
+</div>
+
+<script>
+// ==================== [ 1. إعدادات Firebase ] ====================
+const firebaseConfig = {
+    apiKey: "AIzaSyAI_mUhuPNoO-XC0Q-VNoWft8UWFbAbIGg",
+    authDomain: "sudan-market-6b122.firebaseapp.com",
+    databaseURL: "https://sudan-market-6b122-default-rtdb.firebaseio.com",
+    projectId: "sudan-market-6b122",
+    storageBucket: "sudan-market-6b122.firebasestorage.app",
+    messagingSenderId: "66729481566",
+    appId: "1:66729481566:web:93393f28dc22d32cceebcf"
+};
+
+// تهيئة Firebase
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+
+const auth = firebase.auth();
+const db = firebase.database();
+
+// ==================== [ 2. المتغيرات العامة ] ====================
+const ADMIN_EMAIL = "mb425262@gmail.com";
+const SDM_RATE = 1000;
+let me = null;
+let hStack = ['home'];
+let curC = '', curS = '';
+let isGuest = false;
+let userPic = 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
+let currentBookId = null;
+let selectedChapter = '';
+let currentQuiz = null;
+
+// ⭐ رابط خادم Render (استبدله برابط خادمك الحقيقي)
+const RENDER_SERVER_URL = "https://your-render-server.onrender.com";
+
+// ==================== [ 3. دوال مساعدة ] ====================
+function debounce(func, wait = 300) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+function escapeHtml(text) {
+    if (!text) return text;
+    return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+function showLoading() {
+    Swal.fire({
+        title: 'جاري المعالجة...',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+    });
+}
+
+function hideLoading() {
+    Swal.close();
+}
+
+// ==================== [ 4. نظام المصادقة ] ====================
+async function loginWithGoogle() {
+    try {
+        showLoading();
+        const provider = new firebase.auth.GoogleAuthProvider();
+        const result = await auth.signInWithPopup(provider);
+        
+        if (result.user) {
+            const user = result.user;
+            const userRef = db.ref('users/' + user.uid);
+            const snap = await userRef.once('value');
+            
+            if (!snap.exists()) {
+                // إنشاء مستخدم جديد
+                await userRef.set({
+                    n: user.displayName || 'مستخدم جديد',
+                    p: user.uid,
+                    email: user.email,
+                    pic: user.photoURL || userPic,
+                    sdmBalance: 10,
+                    rating: 5.0,
+                    role: user.email === ADMIN_EMAIL ? 'admin' : 'user',
+                    joinDate: Date.now(),
+                    wa: '',
+                    aiQuizzesCount: 0
+                });
+            }
+            
+            startApp(user.uid);
+        }
+    } catch (error) {
+        hideLoading();
+        Swal.fire('خطأ', 'فشل تسجيل الدخول: ' + error.message, 'error');
+    }
+}
+
+function enterGuestMode() {
+    isGuest = true;
+    me = {
+        n: 'زائر',
+        p: 'guest',
+        role: 'guest',
+        sdmBalance: 0,
+        rating: 0,
+        pic: userPic,
+        joinDate: Date.now(),
+        aiQuizzesCount: 0
+    };
+    
+    document.getElementById('main-preloader').style.display = 'none';
+    document.getElementById('auth-screen').classList.add('hidden');
+    document.getElementById('app-screen').classList.remove('hidden');
+    document.getElementById('u-stars').innerText = "زائر";
+    
+    render('home');
+}
+
+function doLogout() {
+    auth.signOut().then(() => {
+        location.reload();
+    });
+}
+
+// ==================== [ 5. دالة startApp ] ====================
+function startApp(uid) {
+    isGuest = false;
+    
+    db.ref('users/' + uid).on('value', snap => {
+        if (snap.exists()) {
+            me = snap.val();
+            me.p = uid;
+            
+            // تحديث حالة الاتصال
+            db.ref('users/' + uid + '/online').set(true);
+            db.ref('users/' + uid + '/online').onDisconnect().set(false);
+            
+            document.getElementById('u-stars').innerText = (me.rating || 0).toFixed(1);
+            hideLoading();
+        }
+    });
+    
+    document.getElementById('main-preloader').style.display = 'none';
+    document.getElementById('auth-screen').classList.add('hidden');
+    document.getElementById('app-screen').classList.remove('hidden');
+    
+    render('home');
+}
+
+// ==================== [ 6. نظام التنقل ] ====================
+function nav(view, extra) {
+    hStack.push(view);
+    const area = document.getElementById('content-area');
+    
+    // تحديث العنوان
+    const titles = {
+        'home': 'الرئيسية',
+        'library': 'المكتبة',
+        'ai_books': 'البوت المتخصص',
+        'subscription': 'الاشتراك',
+        'profile': 'الملف الشخصي',
+        'book_detail': 'تفاصيل الكتاب'
+    };
+    document.getElementById('head-title').innerText = titles[view] || view;
+    
+    // عرض المحتوى المناسب
+    if (view === 'home') {
+        area.innerHTML = `
+            <div style="padding:20px;">
+                <h2 style="color:var(--neon-blue);">مرحباً بك في المدرس الرقمي</h2>
+                <p>منصة التعليم الذكية مع بوت متخصص في الكتب الدراسية</p>
+                
+                <div class="grid">
+                    <div class="card" onclick="nav('library')">
+                        <i class="fas fa-book" style="color:var(--primary)"></i>
+                        <b>المكتبة الرقمية</b>
+                        <p style="font-size:12px; color:var(--text-sec)">تصفح الكتب الدراسية</p>
+                    </div>
+                    <div class="card" onclick="nav('ai_books')">
+                        <i class="fas fa-robot" style="color:var(--accent)"></i>
+                        <b>البوت المتخصص</b>
+                        <p style="font-size:12px; color:var(--text-sec)">أنشئ اختبارات ذكية</p>
+                    </div>
+                    <div class="card" onclick="nav('subscription')">
+                        <i class="fas fa-crown" style="color:var(--purple)"></i>
+                        <b>الاشتراك</b>
+                        <p style="font-size:12px; color:var(--text-sec)">خطط الاشتراك</p>
+                    </div>
+                    <div class="card" onclick="nav('profile')">
+                        <i class="fas fa-user" style="color:var(--green)"></i>
+                        <b>ملفي</b>
+                        <p style="font-size:12px; color:var(--text-sec)">إدارة حسابك</p>
+                    </div>
+                </div>
+                
+                <div style="margin-top:30px;">
+                    <h3>آخر الكتب المضافة</h3>
+                    <div id="recent-books" class="loading">
+                        <div class="loading-spinner"></div>
+                        <div>جاري تحميل الكتب...</div>
+                    </div>
+                </div>
+            </div>`;
+        
+        loadRecentBooks();
+        
+    } else if (view === 'library') {
+        area.innerHTML = `
+            <div style="padding:20px;">
+                <h2 style="color:var(--neon-blue);">المكتبة الرقمية</h2>
+                <p>اختر كتاباً لتصفحه أو إنشاء اختبار منه</p>
+                
+                <div style="margin:20px 0;">
+                    <input type="text" placeholder="ابحث عن كتاب..." 
+                           style="width:100%;" 
+                           oninput="searchBooks(this.value)">
+                </div>
+                
+                <div id="books-list" class="loading">
+                    <div class="loading-spinner"></div>
+                    <div>جاري تحميل الكتب...</div>
+                </div>
+            </div>`;
+        
+        loadBooks();
+        
+    } else if (view === 'ai_books') {
+        area.innerHTML = `
+            <div style="padding:20px;">
+                <div class="book-ai-section">
+                    <h3 style="color:var(--purple); margin-top:0;">
+                        <i class="fas fa-robot"></i> البوت المتخصص في الكتب
+                    </h3>
+                    <p>اختر كتاباً لإنشاء اختبار ذكي منه:</p>
+                    
+                    <div id="ai-books-list" class="loading">
+                        <div class="loading-spinner"></div>
+                        <div>جاري تحميل الكتب...</div>
+                    </div>
+                    
+                    <div id="ai-interface" style="display:none; margin-top:20px;">
+                        <div style="margin:15px 0;">
+                            <label style="display:block; margin-bottom:8px; color:var(--text-sec);">
+                                اختر الفصل:
+                            </label>
+                            <select id="chapter-select" class="swal2-input" style="width:100%;">
+                                <option value="">-- اختر الفصل --</option>
+                                <option value="الفصل الأول">الفصل الأول</option>
+                                <option value="الفصل الثاني">الفصل الثاني</option>
+                                <option value="الفصل الثالث">الفصل الثالث</option>
+                                <option value="عام">عام (الكتاب كاملاً)</option>
+                            </select>
+                        </div>
+                        
+                        <div style="display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin:15px 0;">
+                            <div>
+                                <label style="display:block; margin-bottom:5px; color:var(--text-sec);">عدد الأسئلة</label>
+                                <select id="question-count" class="swal2-input" style="width:100%;">
+                                    <option value="3">3 أسئلة</option>
+                                    <option value="5" selected>5 أسئلة</option>
+                                    <option value="10">10 أسئلة</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label style="display:block; margin-bottom:5px; color:var(--text-sec);">مستوى الصعوبة</label>
+                                <select id="difficulty" class="swal2-input" style="width:100%;">
+                                    <option value="easy">سهل</option>
+                                    <option value="medium" selected>متوسط</option>
+                                    <option value="hard">صعب</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <button class="btn-main" onclick="generateBookQuizAI()" 
+                                style="background:linear-gradient(90deg, #8b5cf6, #7c3aed);">
+                            <i class="fas fa-magic"></i> إنشاء اختبار ذكي
+                        </button>
+                    </div>
+                    
+                    <div id="quiz-results" style="margin-top:20px;"></div>
+                </div>
+            </div>`;
+        
+        loadAIBooks();
+        
+    } else if (view === 'book_detail') {
+        currentBookId = extra;
+        loadBookDetail(extra);
+        
+    } else if (view === 'subscription') {
+        area.innerHTML = `
+            <div style="padding:20px; text-align:center;">
+                <h2 style="color:var(--accent);">خطط الاشتراك</h2>
+                <p style="color:var(--text-sec); margin-bottom:30px;">اختر الخطة المناسبة لك</p>
+                
+                <div class="grid">
+                    <div class="card">
+                        <h3>أسبوعي</h3>
+                        <div style="font-size:24px; font-weight:bold; color:var(--neon-blue);">7 SDM</div>
+                        <p style="font-size:12px; color:var(--text-sec);">7 أيام كاملة</p>
+                        <button class="btn-main" onclick="buySubscription(7, 7)">اشترك الآن</button>
+                    </div>
+                    
+                    <div class="card" style="border:2px solid var(--accent);">
+                        <h3>شهري</h3>
+                        <div style="font-size:24px; font-weight:bold; color:var(--accent);">25 SDM</div>
+                        <p style="font-size:12px; color:var(--text-sec);">30 يوماً (وفر 3 SDM)</p>
+                        <button class="btn-main" onclick="buySubscription(30, 25)" 
+                                style="background:var(--accent); color:black;">
+                            اشترك الآن
+                        </button>
+                    </div>
+                </div>
+                
+                <div style="margin-top:30px; text-align:right; padding:20px; background:var(--bg-card); border-radius:15px;">
+                    <h4 style="color:var(--neon-blue);">مميزات الاشتراك:</h4>
+                    <ul style="text-align:right; padding-right:15px;">
+                        <li>وصول كامل لجميع الكتب</li>
+                        <li>استخدام البوت المتخصص غير المحدود</li>
+                        <li>إنشاء اختبارات ذكية</li>
+                        <li>تحميل الكتب المدفوعة</li>
+                    </ul>
+                </div>
+            </div>`;
+        
+    } else if (view === 'profile') {
+        area.innerHTML = `
+            <div style="padding:20px; text-align:center;">
+                <img src="${me.pic || userPic}" 
+                     style="width:100px; height:100px; border-radius:50%; border:3px solid var(--neon-blue);">
+                <h2>${me.n}</h2>
+                <p style="color:var(--text-sec);">${me.email || 'لا يوجد بريد'}</p>
+                
+                <div style="background:var(--bg-card); padding:15px; border-radius:15px; margin:20px 0;">
+                    <div style="font-size:14px; color:var(--text-sec);">رصيدك</div>
+                    <div style="font-size:24px; font-weight:bold; color:var(--accent);">
+                        ${me.sdmBalance || 0} SDM
+                    </div>
+                </div>
+                
+                <button class="btn-main" onclick="doLogout()" 
+                        style="background:var(--red);">
+                    <i class="fas fa-sign-out-alt"></i> تسجيل خروج
+                </button>
+            </div>`;
+    }
+    
+    highlightTab(document.querySelector(`[onclick*="${view}"]`));
+}
+
+function highlightTab(el) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    if (el) el.classList.add('active');
+}
+
+function handleBackButton() {
+    if (hStack.length > 1) {
+        hStack.pop();
+        const prevView = hStack[hStack.length - 1];
+        nav(prevView);
+    } else {
+        Swal.fire({
+            title: 'تأكيد',
+            text: 'هل تريد الخروج؟',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'نعم',
+            cancelButtonText: 'لا'
+        }).then(result => {
+            if (result.isConfirmed) {
+                if (isGuest) location.reload();
+                else doLogout();
+            }
+        });
+    }
+}
+
+const debounceFilter = debounce(function(query) {
+    searchBooks(query);
+}, 300);
+
+// ==================== [ 7. نظام الكتب ] ====================
+function loadBooks() {
+    const container = document.getElementById('books-list');
+    if (!container) return;
+    
+    db.ref('books').on('value', snap => {
+        const books = snap.val();
+        container.innerHTML = '';
+        
+        if (!books) {
+            container.innerHTML = '<p style="text-align:center; padding:20px; color:var(--text-sec);">لا توجد كتب حالياً</p>';
+            return;
+        }
+        
+        Object.keys(books).forEach(bookId => {
+            const book = books[bookId];
+            container.innerHTML += `
+                <div class="book-card">
+                    <img src="${book.coverUrl || 'https://cdn-icons-png.flaticon.com/512/3523/3523063.png'}" 
+                         class="book-cover">
+                    <div style="flex:1;">
+                        <div style="font-weight:bold; font-size:16px;">${escapeHtml(book.title)}</div>
+                        <div style="font-size:12px; color:var(--text-sec);">
+                            ${book.author} • ${book.subject} • ${book.grade}
+                        </div>
+                        <div style="font-size:11px; color:var(--accent); margin-top:5px;">
+                            ${book.price > 0 ? book.price + ' SDM' : 'مجاني'}
+                        </div>
+                    </div>
+                    <div style="display:flex; flex-direction:column; gap:5px;">
+                        <button class="btn-main" style="padding:8px 12px; font-size:12px;" 
+                                onclick="nav('book_detail', '${bookId}')">
+                            <i class="fas fa-eye"></i> عرض
+                        </button>
+                        <button class="btn-main" style="padding:8px 12px; font-size:12px; background:var(--purple);" 
+                                onclick="selectBookForAI('${bookId}', '${escapeHtml(book.title)}')">
+                            <i class="fas fa-robot"></i> بوت ذكي
+                        </button>
+                    </div>
+                </div>`;
+        });
+    });
+}
+
+function loadAIBooks() {
+    const container = document.getElementById('ai-books-list');
+    if (!container) return;
+    
+    db.ref('books').on('value', snap => {
+        const books = snap.val();
+        container.innerHTML = '';
+        
+        if (!books) {
+            container.innerHTML = '<p style="text-align:center; padding:20px; color:var(--text-sec);">لا توجد كتب حالياً</p>';
+            return;
+        }
+        
+        Object.keys(books).forEach(bookId => {
+            const book = books[bookId];
+            container.innerHTML += `
+                <div class="post" style="margin-bottom:10px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:15px;">
+                        <div>
+                            <div style="font-weight:bold;">${escapeHtml(book.title)}</div>
+                            <div style="font-size:12px; color:var(--text-sec);">
+                                ${book.subject} • ${book.grade}
+                            </div>
+                        </div>
+                        <button class="btn-main" style="width:auto; padding:8px 15px;" 
+                                onclick="selectBookForAI('${bookId}', '${escapeHtml(book.title)}')">
+                            <i class="fas fa-check"></i> اختر للذكاء الاصطناعي
+                        </button>
+                    </div>
+                </div>`;
+        });
+        
+        document.getElementById('ai-interface').style.display = 'block';
+    });
+}
+
+function selectBookForAI(bookId, bookTitle) {
+    currentBookId = bookId;
+    
+    Swal.fire({
+        title: 'اختر الفصل',
+        html: `
+            <select id="chapter-select" class="swal2-input">
+                <option value="">-- اختر الفصل --</option>
+                <option value="الفصل الأول">الفصل الأول</option>
+                <option value="الفصل الثاني">الفصل الثاني</option>
+                <option value="الفصل الثالث">الفصل الثالث</option>
+                <option value="الفصل الرابع">الفصل الرابع</option>
+                <option value="عام">عام (الكتاب كاملاً)</option>
+            </select>
+            <div style="margin-top:15px;">
+                <label style="display:block; margin-bottom:5px; color:var(--text-sec);">عدد الأسئلة</label>
+                <select id="question-count" class="swal2-input">
+                    <option value="3">3 أسئلة</option>
+                    <option value="5" selected>5 أسئلة</option>
+                    <option value="10">10 أسئلة</option>
+                </select>
+            </div>
+            <div style="margin-top:15px;">
+                <label style="display:block; margin-bottom:5px; color:var(--text-sec);">مستوى الصعوبة</label>
+                <select id="difficulty" class="swal2-input">
+                    <option value="easy">سهل</option>
+                    <option value="medium" selected>متوسط</option>
+                    <option value="hard">صعب</option>
+                </select>
+            </div>
+        `,
+        confirmButtonText: 'إنشاء اختبار ذكي',
+        showCancelButton: true,
+        background: '#1e293b',
+        color: '#fff',
+        preConfirm: () => {
+            const chapter = document.getElementById('chapter-select').value;
+            const count = document.getElementById('question-count').value;
+            const difficulty = document.getElementById('difficulty').value;
+            
+            if (!chapter) {
+                Swal.showValidationMessage('الرجاء اختيار الفصل');
+                return false;
+            }
+            
+            selectedChapter = chapter;
+            return { chapter, count: parseInt(count), difficulty };
+        }
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            await generateBookQuizAI();
+        }
+    });
+}
+
+// ==================== [ 8. الدوال الرئيسية للذكاء الاصطناعي ] ====================
+async function generateBookQuizAI() {
+    if (!currentBookId) return;
+    
+    showLoading();
+    
+    try {
+        // جلب بيانات الكتاب
+        const bookSnap = await db.ref(`books/${currentBookId}`).once('value');
+        const book = bookSnap.val();
+        
+        if (!book) {
+            hideLoading();
+            Swal.fire('خطأ', 'الكتاب غير موجود', 'error');
+            return;
+        }
+        
+        const questionCount = document.getElementById('question-count').value;
+        const difficulty = document.getElementById('difficulty').value;
+        
+        // 📡 الاتصال بخادم Render
+        const response = await fetch(`${RENDER_SERVER_URL}/generate-quiz`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': me.p !== 'guest' ? `Bearer ${me.p}` : ''
+            },
+            body: JSON.stringify({
+                bookId: currentBookId,
+                bookTitle: book.title,
+                bookAuthor: book.author,
+                bookSubject: book.subject,
+                chapter: selectedChapter,
+                questionCount: questionCount,
+                difficulty: difficulty,
+                userId: me.p,
+                userName: me.n
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (!result.success) {
+            throw new Error(result.error || 'فشل إنشاء الاختبار');
+        }
+        
+        hideLoading();
+        
+        // حفظ بيانات الاختبار الحالي
+        currentQuiz = {
+            id: result.quizId,
+            bookId: currentBookId,
+            bookTitle: book.title,
+            chapter: selectedChapter,
+            questions: result.quiz.questions,
+            generatedAt: Date.now()
+        };
+        
+        // عرض الأسئلة
+        displayQuiz(result.quiz.questions, result.quizId);
+        
+        // تحديث إحصائيات المستخدم
+        if (me.p !== 'guest') {
+            await db.ref(`users/${me.p}/aiQuizzesCount`).transaction(current => (current || 0) + 1);
+        }
+        
+    } catch (error) {
+        hideLoading();
+        console.error('خطأ في الذكاء الاصطناعي:', error);
+        
+        // استرجاع النسخة الوهمية كحل بديل
+        if (error.message.includes('Failed to fetch') || error.message.includes('Network')) {
+            Swal.fire({
+                title: 'خادم الذكاء الاصطناعي غير متاح',
+                text: 'جاري استخدام نسخة تجريبية...',
+                icon: 'warning',
+                timer: 2000
+            });
+            await generateMockQuiz();
+        } else {
+            Swal.fire('خطأ', 'فشل إنشاء الاختبار: ' + error.message, 'error');
+        }
+    }
+}
+
+function displayQuiz(questions, quizId) {
+    let quizHtml = `
+        <div class="quiz-result">
+            <h4><i class="fas fa-robot"></i> اختبار ذكي من كتاب: ${currentQuiz.bookTitle}</h4>
+            <p style="color:var(--text-sec);">
+                الفصل: ${selectedChapter} • ${questions.length} سؤال
+                <br><small>تم إنشاؤه بواسطة الذكاء الاصطناعي</small>
+            </p>
+            
+            <div id="quiz-questions-container">`;
+    
+    questions.forEach((q, index) => {
+        quizHtml += `
+            <div class="question-card">
+                <h5>سؤال ${index + 1}: ${escapeHtml(q.question)}</h5>
+                ${q.options.map((option, optIndex) => `
+                    <div class="option" onclick="selectAnswer(${index}, ${optIndex}, ${q.correctAnswer}, '${quizId}')">
+                        ${String.fromCharCode(1632 + optIndex + 1)}. ${escapeHtml(option)}
+                    </div>
+                `).join('')}
+            </div>`;
+    });
+    
+    quizHtml += `
+            </div>
+            
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button class="btn-main" onclick="submitQuiz('${quizId}')" style="background:var(--green);">
+                    <i class="fas fa-check-circle"></i> إنهاء الاختبار
+                </button>
+                <button class="btn-main" onclick="generateBookQuizAI()" style="background:var(--purple);">
+                    <i class="fas fa-redo"></i> إنشاء اختبار جديد
+                </button>
+            </div>
+        </div>`;
+    
+    document.getElementById('quiz-results').innerHTML = quizHtml;
+}
+
+function selectAnswer(questionIndex, optionIndex, correctIndex, quizId) {
+    const questionCard = document.querySelectorAll('.question-card')[questionIndex];
+    const options = questionCard.querySelectorAll('.option');
+    
+    // إزالة التحديد السابق
+    options.forEach(opt => {
+        opt.classList.remove('selected', 'correct', 'incorrect');
+    });
+    
+    // تحديد الخيار المختار
+    options[optionIndex].classList.add('selected');
+    
+    // إذا كان هذا هو التصحيح النهائي
+    if (currentQuiz && currentQuiz.answers && currentQuiz.answers[questionIndex] !== undefined) {
+        options[correctIndex].classList.add('correct');
+        if (optionIndex !== correctIndex) {
+            options[optionIndex].classList.add('incorrect');
+        }
+    }
+}
+
+async function submitQuiz(quizId) {
+    if (!currentQuiz || !currentQuiz.questions) return;
+    
+    // جمع الإجابات
+    const userAnswers = {};
+    const questions = document.querySelectorAll('.question-card');
+    let score = 0;
+    
+    questions.forEach((card, index) => {
+        const selected = card.querySelector('.option.selected');
+        if (selected) {
+            const optionIndex = Array.from(card.querySelectorAll('.option')).indexOf(selected);
+            userAnswers[index] = optionIndex;
+            
+            // التحقق من الإجابة الصحيحة
+            if (optionIndex === currentQuiz.questions[index].correctAnswer) {
+                score++;
+            }
+        }
+    });
+    
+    // عرض النتيجة
+    const totalQuestions = currentQuiz.questions.length;
+    const percentage = Math.round((score / totalQuestions) * 100);
+    
+    // حفظ النتيجة في Firebase
+    if (me && me.p !== 'guest') {
+        const resultId = `quiz_result_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        
+        await db.ref(`ai_quiz_results/${resultId}`).set({
+            quizId: quizId,
+            userId: me.p,
+            userName: me.n,
+            bookId: currentQuiz.bookId,
+            bookTitle: currentQuiz.bookTitle,
+            chapter: selectedChapter,
+            score: score,
+            totalQuestions: totalQuestions,
+            percentage: percentage,
+            answers: userAnswers,
+            correctAnswers: currentQuiz.questions.map(q => q.correctAnswer),
+            submittedAt: Date.now()
+        });
+    }
+    
+    // عرض النتيجة
+    Swal.fire({
+        title: 'نتيجة الاختبار',
+        html: `
+            <div style="text-align:center;">
+                <div style="font-size:48px; color:${percentage >= 70 ? 'var(--green)' : percentage >= 50 ? 'var(--accent)' : 'var(--red)'}; font-weight:bold;">
+                    ${percentage}%
+                </div>
+                <div style="font-size:18px; margin:10px 0;">
+                    ${score} من ${totalQuestions} إجابة صحيحة
+                </div>
+                <div style="font-size:14px; color:var(--text-sec);">
+                    ${percentage >= 70 ? 'ممتاز! 👏' : percentage >= 50 ? 'جيد، يمكنك التحسن' : 'تحتاج للمزيد من المذاكرة'}
+                </div>
+            </div>
+        `,
+        icon: percentage >= 70 ? 'success' : percentage >= 50 ? 'warning' : 'error',
+        confirmButtonText: 'حسناً',
+        background: '#1e293b',
+        color: '#fff'
+    });
+    
+    // إظهار الإجابات الصحيحة
+    currentQuiz.answers = userAnswers;
+    currentQuiz.questions.forEach((q, index) => {
+        const options = document.querySelectorAll(`.question-card:nth-child(${index + 1}) .option`);
+        options.forEach((opt, idx) => {
+            if (idx === q.correctAnswer) {
+                opt.classList.add('correct');
+            }
+            if (userAnswers[index] !== undefined && idx === userAnswers[index] && idx !== q.correctAnswer) {
+                opt.classList.add('incorrect');
+            }
+        });
+    });
+}
+
+// النسخة الوهمية كبديل
+async function generateMockQuiz() {
+    const bookSnap = await db.ref(`books/${currentBookId}`).once('value');
+    const book = bookSnap.val();
+    
+    const mockQuestions = [
+        {
+            question: `ما هو موضوع كتاب "${book.title}"؟`,
+            options: ["الرياضيات", "العلوم", "اللغة العربية", "التاريخ"],
+            correctAnswer: 2
+        },
+        {
+            question: `من هو مؤلف الكتاب؟`,
+            options: ["أحمد محمد", book.author, "علي حسن", "محمد خالد"],
+            correctAnswer: 1
+        }
+    ];
+    
+    currentQuiz = {
+        id: `mock_${Date.now()}`,
+        bookId: currentBookId,
+        bookTitle: book.title,
+        chapter: selectedChapter,
+        questions: mockQuestions,
+        generatedAt: Date.now()
+    };
+    
+    displayQuiz(mockQuestions, currentQuiz.id);
+}
+
+// ==================== [ 9. دوال إضافية ] ====================
+function searchBooks(query) {
+    const container = document.getElementById('books-list');
+    if (!container) return;
+    
+    db.ref('books').once('value').then(snap => {
+        const books = snap.val();
+        container.innerHTML = '';
+        
+        if (!books) return;
+        
+        const searchTerm = query.toLowerCase();
+        Object.keys(books).forEach(bookId => {
+            const book = books[bookId];
+            const title = book.title.toLowerCase();
+            const author = book.author.toLowerCase();
+            
+            if (title.includes(searchTerm) || author.includes(searchTerm)) {
+                container.innerHTML += `
+                    <div class="book-card">
+                        <img src="${book.coverUrl || 'https://cdn-icons-png.flaticon.com/512/3523/3523063.png'}" 
+                             class="book-cover">
+                        <div style="flex:1;">
+                            <div style="font-weight:bold; font-size:16px;">${escapeHtml(book.title)}</div>
+                            <div style="font-size:12px; color:var(--text-sec);">
+                                ${book.author} • ${book.subject} • ${book.grade}
+                            </div>
+                            <div style="font-size:11px; color:var(--accent); margin-top:5px;">
+                                ${book.price > 0 ? book.price + ' SDM' : 'مجاني'}
+                            </div>
+                        </div>
+                        <div style="display:flex; flex-direction:column; gap:5px;">
+                            <button class="btn-main" style="padding:8px 12px; font-size:12px;" 
+                                    onclick="nav('book_detail', '${bookId}')">
+                                <i class="fas fa-eye"></i> عرض
+                            </button>
+                            <button class="btn-main" style="padding:8px 12px; font-size:12px; background:var(--purple);" 
+                                    onclick="selectBookForAI('${bookId}', '${escapeHtml(book.title)}')">
+                                <i class="fas fa-robot"></i> بوت
+                            </button>
+                        </div>
+                    </div>`;
+            }
+        });
+    });
+}
+
+function loadRecentBooks() {
+    const container = document.getElementById('recent-books');
+    if (!container) return;
+    
+    db.ref('books').orderByChild('uploadDate').limitToLast(3).on('value', snap => {
+        const books = snap.val();
+        container.innerHTML = '';
+        
+        if (!books) {
+            container.innerHTML = '<p style="text-align:center; padding:20px; color:var(--text-sec);">لا توجد كتب حديثة</p>';
+            return;
+        }
+        
+        Object.entries(books).reverse().forEach(([bookId, book]) => {
+            container.innerHTML += `
+                <div class="post">
+                    <div style="display:flex; align-items:center; padding:15px;">
+                        <img src="${book.coverUrl || 'https://cdn-icons-png.flaticon.com/512/3523/3523063.png'}" 
+                             style="width:50px; height:70px; border-radius:8px; object-fit:cover;">
+                        <div style="flex:1; margin-right:15px;">
+                            <div style="font-weight:bold; font-size:14px;">${escapeHtml(book.title)}</div>
+                            <div style="font-size:11px; color:var(--text-sec);">${book.author} • ${book.subject}</div>
+                            <div style="font-size:10px; color:var(--accent); margin-top:3px;">
+                                ${book.price > 0 ? book.price + ' SDM' : 'مجاني'}
+                            </div>
+                        </div>
+                        <button class="btn-main" style="width:auto; padding:8px 12px; font-size:12px;" 
+                                onclick="nav('book_detail', '${bookId}')">
+                            <i class="fas fa-eye"></i> عرض
+                        </button>
+                    </div>
+                </div>`;
+        });
+    });
+}
+
+function loadBookDetail(bookId) {
+    db.ref(`books/${bookId}`).once('value').then(snap => {
+        const book = snap.val();
+        if (!book) return;
+        
+        const area = document.getElementById('content-area');
+        area.innerHTML = `
+            <div style="padding:20px;">
+                <div style="text-align:center; margin-bottom:20px;">
+                    <img src="${book.coverUrl || 'https://cdn-icons-png.flaticon.com/512/3523/3523063.png'}" 
+                         style="width:150px; height:200px; border-radius:10px; border:2px solid var(--accent);">
+                    <h2 style="color:var(--neon-blue); margin-top:10px;">${escapeHtml(book.title)}</h2>
+                </div>
+                
+                <div class="post" style="padding:20px;">
+                    <h3 style="color:var(--accent);">معلومات الكتاب</h3>
+                    <div style="line-height:2;">
+                        <div><strong>المؤلف:</strong> ${book.author}</div>
+                        <div><strong>المادة الدراسية:</strong> ${book.subject}</div>
+                        <div><strong>الصف الدراسي:</strong> ${book.grade}</div>
+                        <div><strong>السعر:</strong> ${book.price > 0 ? book.price + ' SDM' : 'مجاني'}</div>
+                        <div><strong>تاريخ الرفع:</strong> ${new Date(book.uploadDate).toLocaleDateString('ar-SA')}</div>
+                    </div>
+                </div>
+                
+                <div style="display:flex; gap:10px; margin-top:20px;">
+                    <button class="btn-main" onclick="nav('library')">
+                        <i class="fas fa-arrow-right"></i> العودة للمكتبة
+                    </button>
+                    <button class="btn-main" style="background:var(--accent); color:black;" 
+                            onclick="downloadBook('${bookId}', ${book.price}, '${book.bookUrl}')">
+                        <i class="fas fa-download"></i> تحميل الكتاب
+                    </button>
+                    <button class="btn-main" style="background:var(--purple);" 
+                            onclick="selectBookForAI('${bookId}', '${escapeHtml(book.title)}')">
+                        <i class="fas fa-robot"></i> إنشاء اختبار ذكي
+                    </button>
+                </div>
+            </div>`;
+    });
+}
+
+async function downloadBook(bookId, price, bookUrl) {
+    if (isGuest) {
+        Swal.fire('تنبيه', 'يجب تسجيل الدخول لتحميل الكتب', 'warning');
+        return;
+    }
+    
+    if (price > 0 && me.sdmBalance < price) {
+        Swal.fire({
+            title: 'رصيد غير كافي',
+            text: `تحتاج ${price} SDM لتحميل هذا الكتاب`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'شراء رصيد',
+            cancelButtonText: 'إلغاء'
+        }).then(result => {
+            if (result.isConfirmed) {
+                nav('subscription');
+            }
+        });
+        return;
+    }
+    
+    if (price > 0) {
+        const confirm = await Swal.fire({
+            title: 'تأكيد الشراء',
+            text: `سيتم خصم ${price} SDM من رصيدك`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'شراء وتحميل',
+            cancelButtonText: 'إلغاء'
+        });
+        
+        if (!confirm.isConfirmed) return;
+        
+        await db.ref(`users/${me.p}`).update({
+            sdmBalance: me.sdmBalance - price
+        });
+        
+        me.sdmBalance -= price;
+        document.getElementById('u-stars').innerText = me.sdmBalance.toFixed(1);
+    }
+    
+    // زيادة عداد التنزيلات
+    await db.ref(`books/${bookId}/downloads`).transaction(current => (current || 0) + 1);
+    
+    // فتح الكتاب في نافذة جديدة
+    window.open(bookUrl, '_blank');
+    
+    Swal.fire({
+        title: 'جاري التحميل',
+        text: 'سيتم فتح الكتاب في نافذة جديدة',
+        icon: 'success',
+        timer: 2000
+    });
+}
+
+async function buySubscription(days, price) {
+    if (isGuest) {
+        Swal.fire('تنبيه', 'يجب تسجيل الدخول للاشتراك', 'warning');
+        return;
+    }
+    
+    const confirm = await Swal.fire({
+        title: 'تأكيد الاشتراك',
+        text: `سعر الاشتراك: ${price} SDM لمدة ${days} يوم`,
+        icon: 'info',
+        showCancelButton: true,
+        confirmButtonText: 'اشترك الآن',
+        cancelButtonText: 'إلغاء'
+    });
+    
+    if (!confirm.isConfirmed) return;
+    
+    const expiry = Date.now() + (days * 24 * 60 * 60 * 1000);
+    
+    await db.ref(`users/${me.p}`).update({
+        sdmBalance: me.sdmBalance - price
+    });
+    
+    await db.ref(`subscriptions/${me.p}`).set({
+        expiry: expiry,
+        days: days,
+        price: price,
+        purchasedAt: Date.now()
+    });
+    
+    me.sdmBalance -= price;
+    
+    Swal.fire({
+        title: 'تم الاشتراك بنجاح',
+        text: `تم تفعيل اشتراكك لمدة ${days} يوم`,
+        icon: 'success'
+    });
+    
+    document.getElementById('u-stars').innerText = me.sdmBalance.toFixed(1);
+}
+
+// ==================== [ 10. تهيئة التطبيق ] ====================
+// مراقب حالة المصادقة
+firebase.auth().onAuthStateChanged(function(user) {
+    const preloader = document.getElementById('main-preloader');
+    const authScreen = document.getElementById('auth-screen');
+    const appScreen = document.getElementById('app-screen');
+
+    if (user) {
+        startApp(user.uid);
+    } else if (!isGuest) {
+        preloader.style.display = 'none';
+        authScreen.classList.remove('hidden');
+        appScreen.classList.add('hidden');
+    }
+});
+
+// تهيئة عند تحميل الصفحة
+document.addEventListener('DOMContentLoaded', function() {
+    // إخفاء التحميل بعد ثانيتين إذا لم يكن هناك مستخدم
+    setTimeout(() => {
+        const preloader = document.getElementById('main-preloader');
+        const authScreen = document.getElementById('auth-screen');
+        
+        if (!firebase.auth().currentUser && !isGuest) {
+            preloader.style.display = 'none';
+            authScreen.classList.remove('hidden');
+        }
+    }, 2000);
+});
+</script>
+</body>
+</html>
